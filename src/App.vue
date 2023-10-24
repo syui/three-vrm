@@ -4,6 +4,9 @@
 </template>
 
 <script>
+export default {
+  name: 'App'
+};
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -78,8 +81,8 @@ scene.add(ambiantLight);
 
 // add mesh
 const floor = new Mesh(
-  new PlaneGeometry(100, 100),
-  new MeshLambertMaterial({
+  new PlaneGeometry(10, 10),
+		new MeshLambertMaterial({
     color: 0xffffff,
     depthWrite: true,
   })
@@ -92,16 +95,16 @@ scene.add(grid);
 
 // light
 const light = new THREE.DirectionalLight(0xffffff);
-light.position.set(1.0, 1.0, 1.0).normalize();
+//light.position.set(1.0, 1.0, 1.0).normalize();
 scene.add(light);
-
 // gltf and vrm
 let currentVrm = undefined;
 let currentAnimationUrl = undefined;
 let currentMixer = undefined;
 const helperRoot = new THREE.Group();
-helperRoot.renderOrder = 10000;
-scene.add( helperRoot );
+helperRoot.renderOrder = 1000;
+scene.add(helperRoot);
+
 
 function loadVRM( modelUrl ) {
 	const loader = new GLTFLoader();
@@ -110,6 +113,7 @@ function loadVRM( modelUrl ) {
 	loader.register((parser) => {
 		return new VRMLoaderPlugin(parser, { autoUpdateHumanBones: true } );
 	});
+
 	loader.load(
 		modelUrl,
 		(gltf) => {
@@ -120,6 +124,7 @@ function loadVRM( modelUrl ) {
 			
 			vrm.scene.traverse((obj) => {
 				obj.frustumCulled = false;
+				obj.castShadow = true;
 			});
 
 			// replace the lookAt to our extended one
@@ -146,6 +151,21 @@ function blink(){
 	}
 }
 
+function move_camera(){
+	let a = 0.003;
+	let b = -0.003;
+	if (clock.elapsedTime > 10) {
+		//if (Math.sin(Math.PI * clock.elapsedTime) > 0.1) {
+		let b = 0.01 * Math.PI * Math.sin(Math.PI * clock.elapsedTime);
+		let a = 0;
+	} else {
+		camera.translateZ(b);
+	}
+	camera.translateX(a);
+	camera.translateY(a);
+	camera.lookAt(new THREE.Vector3(0, 0, 0));
+}
+
 // animate
 const clock = new THREE.Clock();
 function animate() {
@@ -156,9 +176,13 @@ function animate() {
 	}
 	if (currentVrm) {
 		const s = 0.01 * Math.PI * Math.sin(Math.PI * clock.elapsedTime);
-		blink();
-		currentVrm.humanoid.getNormalizedBoneNode('neck').rotation.y = s;
-		currentVrm.scene.rotation.y = Math.PI * Math.sin(clock.getElapsedTime());
+		var rand = Math.random()
+		if (Math.sin(Math.PI * clock.elapsedTime) > 0.1 && rand > .9) {
+			blink();
+			currentVrm.humanoid.getNormalizedBoneNode('neck').rotation.y = s;
+		}
+		//move_camera();
+		//currentVrm.scene.rotation.y = Math.PI * Math.sin(clock.getElapsedTime());
 		currentVrm.update(delta);
 	}
 	renderer.render(scene, camera);
